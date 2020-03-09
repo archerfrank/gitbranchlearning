@@ -173,3 +173,106 @@ git describe <ref>
 <ref> 可以是任何能被 Git 识别成提交记录的引用，如果你没有指定的话，Git 会以你目前所检出的位置（HEAD）。
 
 ## 多分支 rebase
+
+下面的命令就不用checkout到bugFix了, 在rebase，可以直接把bugFix， rebase到master上。这其实还有一个找到共同祖先的过程。
+```
+git rebase master bugFix
+```
+
+## 选择父提交记录
+操作符 ^ 与 ~ 符一样，后面也可以跟一个数字。
+
+但是该操作符后面的数字与 ~ 后面的不同，并不是用来指定向上返回几代，而是指定合并提交记录的某个父提交。还记得前面提到过的一个合并提交有两个父提交吧，所以遇到这样的节点时该选择哪条路径就不是很清晰了。
+
+Git 默认选择合并提交的“第一个”父提交，在操作符 ^ 后跟一个数字可以改变这一默认行为。
+
+使用 ^ 和 ~ 可以自由地在提交树中移动
+```
+git checkout HEAD^2; git checkout HEAD~2;
+git checkout HEAD^2~2;
+```
+
+
+# 远程仓库
+
+## 远程分支
+
+远程分支反映了远程仓库(在你上次和它通信时)的状态。这会有助于你理解本地的工作与公共工作的差别 —— 这是你与别人分享工作成果前至关重要的一步.
+
+远程分支有一个特别的属性，在你检出时自动进入分离 HEAD 状态。Git 这么做是出于不能直接在这些分支上进行操作的原因, 你必须在别的地方完成你的工作, （更新了远程分支之后）再用远程分享你的工作成果。
+
+你可能想问这些远程分支的前面的 o/ 是什么意思呢？好吧, 远程分支有一个命名规范 —— 它们的格式是:
+
+<remote name>/<branch name>
+因此，如果你看到一个名为 o/master 的分支，那么这个分支就叫 master，远程仓库的名称就是 o。
+```
+git checkout o/master; git commit;
+```
+Git 变成了分离 HEAD 状态，当添加新的提交时 o/master 也不会更新。这是因为 o/master 只有在远程仓库中相应的分支更新了以后才会更新。
+
+## fetch
+
+```
+git fetch
+```
+
+就是这样了! C2,C3 被下载到了本地仓库，同时远程分支 o/master 也被更新，反映到了这一变化
+
+git fetch 完成了仅有的但是很重要的两步:
+
+1. 从远程仓库下载本地仓库中缺失的提交记录
+2. 更新远程分支指针(如 o/master)
+
+git fetch 并不会改变你本地仓库的状态。它不会更新你的 master 分支，也不会修改你磁盘上的文件。
+
+## Pull
+当远程分支中有新的提交时，你可以像合并本地分支那样来合并远程分支。也就是说就是你可以执行以下命令:
+
+1. git cherry-pick o/master
+2. git rebase o/master
+3. git merge o/master
+
+git pull 就是 git fetch 和 git merge <just-fetched-branch> 的缩写
+
+## 偏离的工作
+
+假设你周一克隆了一个仓库，然后开始研发某个新功能。到周五时，你新功能开发测试完毕，可以发布了。但是 —— 天啊！你的同事这周写了一堆代码，还改了许多你的功能中使用的 API，这些变动会导致你新开发的功能变得不可用。但是他们已经将那些提交推送到远程仓库了，因此你的工作就变成了基于项目旧版的代码，与远程仓库最新的代码不匹配了。
+
+这种情况下, git push 就不知道该如何操作了。如果你执行 git push，Git 应该让远程仓库回到星期一那天的状态吗？还是直接在新代码的基础上添加你的代码，异或由于你的提交已经过时而直接忽略你的提交？
+
+因为这情况（历史偏离）有许多的不确定性，Git 是不会允许你 push 变更的。实际上它会强制你先合并远程最新的代码，然后才能分享你的工作。
+
+**最直接的方法就是通过 rebase 调整你的工作。**
+
+```
+git fetch; git rebase o/master; git push;
+```
+
+我们用 git fetch 更新了本地仓库中的远程分支，然后用 rebase 将我们的工作移动到最新的提交记录下，最后再用 git push 推送到远程仓库。
+
+我们还可以使用 **merge**
+```
+git fetch; git merge o/master; git push;
+```
+我们用 git fetch 更新了本地仓库中的远程分支，然后合并了新变更到我们的本地分支（为了包含远程仓库的变更），最后我们用 git push 把工作推送到远程仓库.
+
+当然 —— 前面已经介绍过 git pull 就是 fetch 和 merge 的简写，类似的 git pull --rebase 就是 fetch 和 rebase 的简写！
+
+```
+git pull --rebase; git push
+git pull; git push
+```
+
+## 远程服务器拒绝!(Remote Rejected)
+
+如果你是在一个大的合作团队中工作, 很可能是master被锁定了, 需要一些Pull Request流程来合并修改。如果你直接提交(commit)到本地master, 然后试图推送(push)修改, 你将会收到这样类似的信息:
+
+! [远程服务器拒绝] master -> master (TF402455: 不允许推送(push)这个分支; 你必须使用pull request来更新这个分支.)
+
+新建一个分支feature, 推送到远程服务器. 然后reset你的master分支和远程服务器保持一致, 否则下次你pull并且他人的提交和你冲突的时候就会有问题.
+
+```
+git checkout -b feature
+git branch -f master origin/master
+git push
+```
