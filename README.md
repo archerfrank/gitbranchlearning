@@ -276,3 +276,67 @@ git checkout -b feature
 git branch -f master origin/master
 git push
 ```
+
+## 合并特性分支
+
+在开发社区里，有许多关于 merge 与 rebase 的讨论。以下是关于 rebase 的优缺点：
+
+优点:
+
+Rebase 使你的提交树变得很干净, 所有的提交都在一条线上
+缺点:
+
+Rebase 修改了提交树的历史
+比如, 提交 C1 可以被 rebase 到 C3 之后。这看起来 C1 中的工作是在 C3 之后进行的，但实际上是在 C3 之前。
+
+一些开发人员喜欢保留提交历史，因此更偏爱 merge。而其他人（比如我自己）可能更喜欢干净的提交树，于是偏爱 rebase。仁者见仁，智者见智。
+
+## 远程跟踪
+
+直接了当地讲，master 和 o/master 的关联关系就是由分支的“remote tracking”属性决定的。master 被设定为跟踪 o/master —— 这意味着为 master 分支指定了推送的目的地以及拉取后合并的目标。
+
+你可能想知道 master 分支上这个属性是怎么被设定的，你并没有用任何命令指定过这个属性呀！好吧, 当你克隆仓库的时候, Git 就自动帮你把这个属性设置好了。
+
+当你克隆时, Git 会为远程仓库中的每个分支在本地仓库中创建一个远程分支（比如 o/master）。然后再创建一个跟踪远程仓库中活动分支的本地分支，默认情况下这个本地分支会被命名为 master。
+
+你可以让任意分支跟踪 o/master, 然后该分支会像 master 分支一样得到隐含的 push 目的地以及 merge 的目标。 这意味着你可以在分支 totallyNotMaster 上执行 git push，将工作推送到远程仓库的 master 分支上。
+
+有两种方法设置这个属性，第一种就是通过远程分支检出一个新的分支，执行:
+```
+git checkout -b totallyNotMaster o/master
+```
+就可以创建一个名为 totallyNotMaster 的分支，它跟踪远程分支 o/master。
+
+另一种设置远程追踪分支的方法就是使用：git branch -u 命令，执行：
+```
+git branch -u o/master foo
+```
+这样 foo 就会跟踪 o/master 了。如果当前就在 foo 分支上, 还可以省略 foo：
+```
+git branch -u o/master
+```
+
+## Git Push 的参数
+
+Git 是通过当前检出分支的属性来确定远程仓库以及要 push 的目的地的。这是未指定参数时的行为，我们可以为 push 指定参数，语法是：
+```
+git push <remote> <place>
+
+git push origin master
+```
+把这个命令翻译过来就是：
+
+*切到本地仓库中的“master”分支，获取所有的提交，再到远程仓库“origin”中找到“master”分支，将远程仓库中没有的提交记录都添加上去，搞定之后告诉我。*
+
+
+要同时为源和目的地指定 <place> 的话，只需要用冒号 : 将二者连起来就可以了：
+
+```
+git push origin <source>:<destination>
+git push origin HEAD^:master
+``` 
+
+如果你要推送到的目的分支不存在会怎么样呢？没问题！Git 会在远程仓库中根据你提供的名称帮你创建这个分支.
+```
+git push origin master:newBranch
+```
