@@ -1,7 +1,8 @@
 # Git branch learning
 
-https://github.com/pcottle/learnGitBranching 
-https://learngitbranching.js.org/?demo 
+<https://github.com/pcottle/learnGitBranching> 
+
+<https://learngitbranching.js.org/?demo> 
 
 ## Basic
 
@@ -340,3 +341,47 @@ git push origin HEAD^:master
 ```
 git push origin master:newBranch
 ```
+
+## Git fetch 的参数
+
+git fetch 的参数和 git push 极其相似。他们的概念是相同的，只是方向相反罢了（因为现在你是下载，而非上传）
+
+```
+git fetch origin foo
+```
+
+Git 会到远程仓库的 foo 分支上，然后获取所有本地不存在的提交，放到本地的 o/foo 上。
+
+```
+git fetch origin foo^/bar
+```
+这个命令会把foo的上一个提交，fetch到本地，并把branch bar指到这个位置，而不是移动o/foo。
+
+## 古怪的 <source>
+
+Git 有两种关于 <source> 的用法是比较诡异的，即你可以在 git push 或 git fetch 时不指定任何 source，方法就是仅保留冒号和 destination 部分，source 部分留空。
+```
+git push origin :side
+git fetch origin :bugFix
+```
+
+如果 push 空 <source> 到远程仓库会如何呢？它会删除远程仓库中的分支！
+如果 fetch 空 <source> 到本地，会在本地创建一个新分支。
+
+## Git pull 参数
+```
+git pull origin foo 
+```
+相当于：
+```
+git fetch origin foo; git merge o/foo
+```
+
+```
+git pull origin bar~1:bugFix 
+```
+相当于：
+```
+git fetch origin bar~1:bugFix; git merge bugFix
+``
+
